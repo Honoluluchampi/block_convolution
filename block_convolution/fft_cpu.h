@@ -11,20 +11,21 @@ using comp = std::complex<num_type>;
 
 namespace conv {
 	
-	// all signals are represented as std::vector<float>
+	// all signals are represented as std::vector<comp>
 
-	void zero_pad(std::vector<float>& signal, size_t size) {
+	void zero_pad(std::vector<comp>& signal, size_t size) {
 		auto original_size = signal.size();
 		signal.resize(size);
 
 		// if the target size is larger than the original size
 		if (original_size < size) {
 			for (int i = original_size; i < size; i++) {
-				signal[i] = 0.f;
+				signal[i] = { 0.f, 0.f };
 			}
 		}
 	}
 
+	// currently Cooly-Tukey FFT
 	void fft_rec(
 		std::vector<comp>& input,
 		int stride,
@@ -36,6 +37,7 @@ namespace conv {
 			const int h = n / 2;
 			const num_type theta = 2.f * M_PI / static_cast<num_type>(n);
 
+			// butterflies
 			for (int i = 0; i < h; i++) {
 				const comp wi = { std::cos(i * theta), -sin(i * theta) };
 				const comp a = input[first_index + i + 0];
@@ -55,7 +57,7 @@ namespace conv {
 	}
 
 	// fft from time to freq
-	std::vector<comp> fft(std::vector<comp>& input) {
+	std::vector<comp> fft_recursive(std::vector<comp>& input) {
 		int n = input.size();
 
 		fft_rec(input, 1, 0, 0, n);
@@ -64,7 +66,7 @@ namespace conv {
 	}
 
 	// ifft from freq to time
-	std::vector<comp> ifft(std::vector<comp>& input) {
+	std::vector<comp> ifft_recursive(std::vector<comp>& input) {
 		int n = input.size();
 
 		for (int i = 0; i < n; i++) {
@@ -78,6 +80,35 @@ namespace conv {
 		}
 
 		return input;
+	}
+
+	// fft without recursion
+	std::vector<comp> fft(std::vector<comp>& input) {
+		auto n = input.size();
+		int h;
+		num_type theta = 2 * M_PI / static_cast<num_type>(n);
+
+		for (int m = n; (h = n >> 1) >= 1; m = h) {
+			for (int i = 0; i < h; i++) {
+				comp w = { std::cos(theta * i), std::sin(theta * i) };
+				for (int j = i; j < n; j += m) {
+					int k = j + h;
+					comp tmp = input[j] - input[k];
+					input[j] += input[k];
+					input[k] = tmp * w;
+				}
+			}
+			theta *= 2;
+		}
+
+		// in-place
+		int i = 0;
+		for (int j = 1; j < n - 1; j++) {
+			for (int k = n >> 1; k > (i ^= k); k >>= 1);
+			if (j < i) {
+				std::swap(input[i], input[j]);
+			}
+		}
 	}
 
 } // namespace conv

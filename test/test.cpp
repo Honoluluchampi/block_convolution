@@ -10,7 +10,7 @@ bool neq(const T& a, const T& b, double eps = 0.000001)
 namespace conv {
 
   TEST(fft, fft_recursive) {
-    std::vector<comp> input = { {1, 0}, {0, 0}, {2, 0}, {0, 0}, {0, 0}, {2, 0}, {5, 0}, {4,0} };
+    std::vector<comp_t> input = { {1, 0}, {0, 0}, {2, 0}, {0, 0}, {0, 0}, {2, 0}, {5, 0}, {4,0} };
     // F_ans is obtained by numpy.fft.fft
     std::vector<double> F_real_ans = {
       14.f,
@@ -44,7 +44,7 @@ namespace conv {
   }
 
   TEST(fft, ifft_recursive) {
-    std::vector<comp> input = { {1, 0}, {0, 0}, {2, 0}, {0, 0}, {0, 0}, {2, 0}, {5, 0}, {4, 0} };
+    std::vector<comp_t> input = { {1, 0}, {0, 0}, {2, 0}, {0, 0}, {0, 0}, {2, 0}, {5, 0}, {4, 0} };
     auto input_copy = input;
 
     conv::fft_recursive(input);
@@ -54,6 +54,34 @@ namespace conv {
     for (int i = 0; i < input.size(); i++) {
       EXPECT_NEQ(input[i].real(), input_copy[i].real());
       EXPECT_NEQ(input[i].imag(), input_copy[i].imag());
+    }
+  }
+
+  TEST(fft, fft_non_recursive) {
+    std::vector<comp_t> input = { {1, 0}, {0, 0}, {2, 0}, {0, 0}, {0, 0}, {2, 0}, {5, 0}, {4,0} };
+    auto input_copy = input;
+
+    conv::fft(input);
+    conv::fft_recursive(input_copy);
+
+    // check fft answer
+    for (int i = 0; i < input.size(); i++) {
+      EXPECT_NEQ(input[i].real(), input_copy[i].real());
+      EXPECT_EQ(input[i].imag(), input_copy[i].imag());
+    }
+  }
+
+  TEST(fft, fft_stockham) {
+    std::vector<comp_t> input = { {1, 0}, {0, 0}, {2, 0}, {0, 0}, {0, 0}, {2, 0}, {5, 0}, {4,0} };
+    auto input_copy = input;
+
+    conv::fft_stockham(input);
+    conv::fft_recursive(input_copy);
+
+    // check fft answer
+    for (int i = 0; i < input.size(); i++) {
+      EXPECT_NEQ(input[i].real(), input_copy[i].real());
+      EXPECT_EQ(input[i].imag(), input_copy[i].imag());
     }
   }
 } // namespace hnll::audio

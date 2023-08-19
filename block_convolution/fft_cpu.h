@@ -6,14 +6,14 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-using num_type = double;
-using comp = std::complex<num_type>;
+using num_t = double;
+using comp_t = std::complex<num_t>;
 
 namespace conv {
 	
 	// all signals are represented as std::vector<comp>
 
-	void zero_pad(std::vector<comp>& signal, size_t size) {
+	void zero_pad(std::vector<comp_t>& signal, size_t size) {
 		auto original_size = signal.size();
 		signal.resize(size);
 
@@ -27,7 +27,7 @@ namespace conv {
 
 	// currently Cooly-Tukey FFT
 	void fft_rec(
-		std::vector<comp>& input,
+		std::vector<comp_t>& input,
 		int stride,
 		int first_index,
 		int bit,
@@ -35,13 +35,13 @@ namespace conv {
 		if (n > 1) {
 			assert(n % 2 == 0 && "fft : input size must be equal to 2^k.");
 			const int h = n / 2;
-			const num_type theta = 2.f * M_PI / static_cast<num_type>(n);
+			const num_t theta = 2.f * M_PI / static_cast<num_t>(n);
 
 			// butterflies
 			for (int i = 0; i < h; i++) {
-				const comp wi = { std::cos(i * theta), -sin(i * theta) };
-				const comp a = input[first_index + i + 0];
-				const comp b = input[first_index + i + h];
+				const comp_t wi = { std::cos(i * theta), -sin(i * theta) };
+				const comp_t a = input[first_index + i + 0];
+				const comp_t b = input[first_index + i + h];
 
 				input[first_index + i + 0] = a + b;
 				input[first_index + i + h] = (a - b) * wi;
@@ -57,13 +57,13 @@ namespace conv {
 	}
 
 	// fft from time to freq
-	void fft_recursive(std::vector<comp>& input) {
+	void fft_recursive(std::vector<comp_t>& input) {
 		int n = input.size();
 		fft_rec(input, 1, 0, 0, n);
 	}
 
 	// ifft from freq to time
-	void ifft_recursive(std::vector<comp>& input) {
+	void ifft_recursive(std::vector<comp_t>& input) {
 		int n = input.size();
 
 		for (int i = 0; i < n; i++) {
@@ -73,22 +73,23 @@ namespace conv {
 		fft_rec(input, 1, 0, 0, n);
 
 		for (int i = 0; i < n; i++) {
-			input[i] = conj(input[i] / static_cast<num_type>(n));
+			input[i] = conj(input[i] / static_cast<num_t>(n));
 		}
 	}
 
 	// fft without recursion
-	void fft(std::vector<comp>& input) {
+	void fft(std::vector<comp_t>& input) {
 		auto n = input.size();
 		int h;
-		num_type theta = 2 * M_PI / static_cast<num_type>(n);
+		num_t theta = 2 * M_PI / static_cast<num_t>(n);
 
-		for (int m = n; (h = n >> 1) >= 1; m = h) {
+		for (int m = n; (h = m >> 1) >= 1; m = h) {
 			for (int i = 0; i < h; i++) {
-				comp w = { std::cos(theta * i), std::sin(theta * i) };
+				comp_t w = { std::cos(theta * i), -std::sin(theta * i) };
 				for (int j = i; j < n; j += m) {
+					// butterfly
 					int k = j + h;
-					comp tmp = input[j] - input[k];
+					comp_t tmp = input[j] - input[k];
 					input[j] += input[k];
 					input[k] = tmp * w;
 				}
@@ -106,4 +107,36 @@ namespace conv {
 		}
 	}
 
+	void fft_stockham_rec(int n, int s, bool flag, std::vector<comp_t>& input, std::vector<comp_t>& buffer) {
+		const int m = n / 2;
+		const double theta = 2 * M_PI / n;
+
+		if (n == 1) {
+			if (flag) {
+				for (int q = 0; q < s; q++) {
+					buffer[q] = input[q];
+				}
+			}
+		}
+
+		else {
+			for (int p = 0; p < m; p++) {
+				const comp_t w = comp_t{ cos(p * theta), -sin(p * theta) };
+				for (int q = 0; q < s; q++) {
+					const comp_t a = input[q + s * (p + 0)];
+					const comp_t b = input[q + s * (p + m)];
+					buffer[q + s * (2 * p + 0)] = a + b;
+					buffer[q + s * (2 * p + 1)] = (a - b) * w;
+				}
+			}
+			fft_stockham_rec(m, 2 * s, !flag, buffer, input);
+		}
+	}
+
+	void fft_stockham(std::vector<comp_t>& input) {
+		auto n = input.size();
+		std::vector<comp_t> buffer(n);
+
+		fft_stockham_rec(n, 1, 0, input, buffer);
+	}
 } // namespace conv

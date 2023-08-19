@@ -57,16 +57,13 @@ namespace conv {
 	}
 
 	// fft from time to freq
-	std::vector<comp> fft_recursive(std::vector<comp>& input) {
+	void fft_recursive(std::vector<comp>& input) {
 		int n = input.size();
-
 		fft_rec(input, 1, 0, 0, n);
-
-		return input;
 	}
 
 	// ifft from freq to time
-	std::vector<comp> ifft_recursive(std::vector<comp>& input) {
+	void ifft_recursive(std::vector<comp>& input) {
 		int n = input.size();
 
 		for (int i = 0; i < n; i++) {
@@ -78,12 +75,10 @@ namespace conv {
 		for (int i = 0; i < n; i++) {
 			input[i] = conj(input[i] / static_cast<num_type>(n));
 		}
-
-		return input;
 	}
 
 	// fft without recursion
-	std::vector<comp> fft(std::vector<comp>& input) {
+	void fft(std::vector<comp>& input) {
 		auto n = input.size();
 		int h;
 		num_type theta = 2 * M_PI / static_cast<num_type>(n);

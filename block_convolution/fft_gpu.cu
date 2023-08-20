@@ -1,4 +1,7 @@
+// http://www.na.scitec.kobe-u.ac.jp/~yamamoto/lectures/parallelFFT/parallelFFT1.PDF
+
 #include "fft_cpu.h"
+#include "utils.hpp"
 
 // std
 #include <iostream>
@@ -88,27 +91,41 @@ int main() {
 
   auto cpu_ret = conv::fft_stockham_for(input_copy);
 
-  auto test_error = [&cpu_ret](std::vector<comp_t>& gpu_ret) {
-    double max_error = 0.f;
-    for (int i = 0; i < cpu_ret.size(); i++) {
-      max_error = std::max(max_error, std::abs(gpu_ret[i] - cpu_ret[i]));
-    }
-    return max_error;
-  };
+  // auto test_error = [&cpu_ret](std::vector<comp_t>& gpu_ret) {
+  //   double max_error = 0.f;
+  //   for (int i = 0; i < cpu_ret.size(); i++) {
+  //     max_error = std::max(max_error, std::abs(gpu_ret[i] - cpu_ret[i]));
+  //   }
+  //   return max_error;
+  // };
 
-  auto ret = fft_stockham_gpu(input, 1);
-  std::cout << "thread count : 1 " << std::endl;
-  std::cout << "\tmax error : " <<  test_error(ret) << std::endl;
+  // simple test
+  // auto ret = fft_stockham_gpu(input, 1);
+  // std::cout << "thread count : 1 " << std::endl;
+  // std::cout << "\tmax error : " <<  test_error(ret) << std::endl;
 
-  ret = fft_stockham_gpu(input, 4);
-  std::cout << "thread count : 4 " << std::endl;
-  std::cout << "\tmax error : " <<  test_error(ret) << std::endl;
+  // ret = fft_stockham_gpu(input, 4);
+  // std::cout << "thread count : 4 " << std::endl;
+  // std::cout << "\tmax error : " <<  test_error(ret) << std::endl;
 
-  ret = fft_stockham_gpu(input, 8);
-  std::cout << "thread count : 8 " << std::endl;
-  std::cout << "\tmax error : " <<  test_error(ret) << std::endl;
+  // ret = fft_stockham_gpu(input, 8);
+  // std::cout << "thread count : 8 " << std::endl;
+  // std::cout << "\tmax error : " <<  test_error(ret) << std::endl;
 
-  ret = fft_stockham_gpu(input, 16);
-  std::cout << "thread count : 16 " << std::endl;
-  std::cout << "\tmax error : " <<  test_error(ret) << std::endl;
+  // ret = fft_stockham_gpu(input, 16);
+  // std::cout << "thread count : 16 " << std::endl;
+  // std::cout << "\tmax error : " <<  test_error(ret) << std::endl;
+
+  // gpu : 17ms, cpu : 47ms
+  int input_size = 65536;
+  std::vector<comp_t> perf_input(input_size, { 0.f, 0.f });
+  std::cout << "\nperformance input size : " << input_size << std::endl;
+  {
+    scope_timer timer("gpu_fft");
+    auto ret = fft_stockham_gpu(perf_input, 256);
+  }
+  {
+    scope_timer timer("cpu_fft");
+    auto ret = conv::fft_stockham_for(perf_input);
+  }
 }

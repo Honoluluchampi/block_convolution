@@ -117,4 +117,22 @@ namespace conv {
       EXPECT_NEAR(ret[i].imag(), ans[i].imag(), 0.00001);
     }
   }
+
+  TEST(overlap, add) {
+    std::vector<comp_t> data = { {3, 0}, {-1, 0}, {0, 0}, {1, 0}, {3, 0}, {2, 0}, {0, 0}, {1, 0}, {2, 0}, {1, 0} };
+    std::vector<comp_t> filter = { {1, 0}, {1, 0}, {1, 0} };
+    std::vector<comp_t> ans = {
+      {3, 0}, {2, 0}, {2, 0}, {0, 0}, {4, 0}, {6, 0}, {5, 0}, {3, 0}, {3, 0}, {4, 0}, {3, 0}, {1, 0}
+    };
+
+    auto ret = overlap_add(
+      data,
+      filter,
+      4);
+
+    for (int i = 0; i < ans.size(); i++) {
+      EXPECT_NEAR(ret[i].real(), ans[i].real(), 0.00001);
+      EXPECT_NEAR(ret[i].imag(), ans[i].imag(), 0.00001);
+    }
+  }
 } // namespace hnll::audio

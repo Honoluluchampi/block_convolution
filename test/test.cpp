@@ -84,4 +84,18 @@ namespace conv {
       EXPECT_EQ(input[i].imag(), input_copy[i].imag());
     }
   }
+
+  TEST(fft, fft_stockham_for) {
+    std::vector<comp_t> input = { {1, 0}, {0, 0}, {2, 0}, {0, 0}, {0, 0}, {2, 0}, {5, 0}, {4,0} };
+    auto input_copy = input;
+
+    auto res = conv::fft_stockham_for(input);
+    conv::fft_recursive(input_copy);
+
+    // check fft answer
+    for (int i = 0; i < input.size(); i++) {
+      EXPECT_NEAR(res[i].real(), input_copy[i].real(), 0.00001);
+      EXPECT_EQ(res[i].imag(), input_copy[i].imag());
+    }
+  }
 } // namespace hnll::audio

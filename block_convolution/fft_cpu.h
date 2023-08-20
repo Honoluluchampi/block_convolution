@@ -139,4 +139,48 @@ namespace conv {
 
 		fft_stockham_rec(n, 1, 0, input, buffer);
 	}
+
+  inline int id2(int j, int k, int x_num)
+  { return j * x_num + k; }
+
+  void stockham_butterfly(
+    const std::vector<comp_t>& src,
+    std::vector<comp_t>& dst,
+    int j,
+    int k,
+    int a,
+    int b,
+    int n) {
+    comp_t w = { std::cos(2 * M_PI / n * k * b), -std::sin(2 * M_PI / n * k * b) };
+    dst[id2(j, k + 0, a * 2)] = src[id2(j, k, a)] + src[id2(j + b, k, a)] * w;
+    dst[id2(j, k + a, a * 2)] = src[id2(j, k, a)] - src[id2(j + b, k, a)] * w;
+  }
+
+  auto fft_stockham_for(std::vector<comp_t>& input) {
+    std::vector<comp_t> buffer(input.size());
+
+    int n = input.size();
+    int p = log2(n);
+
+    int a = 1;
+    int b = n >> 1;
+
+    for (int l = 0; l < p; l++) {
+      for (int k = 0; k < a; k++) {
+        for (int j = 0; j < b; j++) {
+          if (l % 2 == 0)
+            stockham_butterfly(input, buffer, j, k, a, b, n);
+          else
+            stockham_butterfly(buffer, input, j, k, a, b, n);
+        }
+      }
+      a <<= 1;
+      b >>= 1;
+    }
+
+    if (p % 2 == 0)
+      return input;
+    else
+      return buffer;
+  }
 } // namespace conv

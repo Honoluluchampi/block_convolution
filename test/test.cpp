@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "../block_convolution/fft_cpu.h"
+#include "../block_convolution/overlap_conv.hpp"
 
 #define EXPECT_NEQ(a, b) EXPECT_TRUE(neq(a, b))
 
@@ -96,6 +97,24 @@ namespace conv {
     for (int i = 0; i < input.size(); i++) {
       EXPECT_NEAR(res[i].real(), input_copy[i].real(), 0.00001);
       EXPECT_EQ(res[i].imag(), input_copy[i].imag());
+    }
+  }
+
+  TEST(overlap, save) {
+    std::vector<comp_t> data = { {3, 0}, {-1, 0}, {0, 0}, {1, 0}, {3, 0}, {2, 0}, {0, 0}, {1, 0}, {2, 0}, {1, 0} };
+    std::vector<comp_t> filter = { {1, 0}, {1, 0}, {1, 0} };
+    std::vector<comp_t> ans = {
+      {3, 0}, {2, 0}, {2, 0}, {0, 0}, {4, 0}, {6, 0}, {5, 0}, {3, 0}, {3, 0}, {4, 0}, {3, 0}, {1, 0}
+    };
+
+    auto ret = overlap_save(
+      data,
+      filter,
+      4);
+
+    for (int i = 0; i < ans.size(); i++) {
+      EXPECT_NEAR(ret[i].real(), ans[i].real(), 0.00001);
+      EXPECT_NEAR(ret[i].imag(), ans[i].imag(), 0.00001);
     }
   }
 } // namespace hnll::audio
